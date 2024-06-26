@@ -1,17 +1,14 @@
+import React, { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   Dimensions,
   FlatList,
-  Image,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from "react-native";
-
-import { getClinics } from "../src/api";
-import React,{ useEffect } from "react";
+import { getProducts } from "../src/api"; // Assuming API function to fetch products
+import { Card, Text, TouchableRipple, Searchbar } from "react-native-paper";
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,37 +19,60 @@ const images = [
 ];
 
 export default function HomeScreen({ navigation }) {
+  const [products, setProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState([]);
 
+  useEffect(() => {
+    getProducts()
+      .then((res) => {
+        setProducts(res);
+        setFilteredProducts(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
 
-  const [clinics, setClinics] = React.useState([]);
+  const onChangeSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      setFilteredProducts(
+        products.filter((product) =>
+          product.name.toLowerCase().includes(query.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredProducts(products);
+    }
+  };
 
-  useEffect(()=>{
-    getClinics().then((res)=>{
-      setClinics(res)
-    }).catch((err)=>{
-      console.log(err)
-    })
-  },[])
-
-  const renderClinicItem = ({ item }) => (
-    <TouchableOpacity style={styles.clinicItem}
-    onPress={()=>navigation.navigate('ClinicDetails',{clinic:item})}>
-      <Image source={{ uri: `http://10.0.2.2:5000/uploads/${item.image}` }} style={styles.imageClinic} />
-      <Text style={styles.itemText}>{item.name}</Text>
-    </TouchableOpacity>
+  const renderProductItem = ({ item }) => (
+    <TouchableRipple
+      style={styles.productItem}
+      onPress={() => navigation.navigate("ProductDetails", { product: item })}
+    >
+      <Card style={styles.card}>
+        <Card.Cover source={{ uri: item.images[0] }} style={styles.imageProduct} />
+        <Card.Content>
+          <Text style={styles.itemText}>{item.name}</Text>
+          <Text style={styles.itemText}>Price: ${item.price}</Text>
+        </Card.Content>
+      </Card>
+    </TouchableRipple>
   );
-
-
-
 
   const renderImageItem = ({ item }) => (
-    <TouchableOpacity style={styles.imageItem}>
-      <Image source={{ uri: item.url }} style={styles.image} />
-    </TouchableOpacity>
+    <TouchableRipple style={styles.imageItem}>
+      <Card style={styles.card}>
+        <Card.Cover source={{ uri: item.url }} style={styles.image} />
+      </Card>
+    </TouchableRipple>
   );
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.carousalTitle}>Features Images</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.carousalTitle}>Featured Images</Text>
       <FlatList
         data={images}
         horizontal
@@ -63,16 +83,23 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={styles.carouselContainer}
       />
 
-      <Text style={styles.title}>select clinics</Text>
+      <Searchbar
+        placeholder="Search Products"
+        onChangeText={onChangeSearch}
+        value={searchQuery}
+        style={styles.searchbar}
+      />
+
+      <Text style={styles.title}>Featured Products</Text>
 
       <FlatList
-        data={clinics}
+        data={filteredProducts}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
-        renderItem={renderClinicItem}
-        contentContainerStyle={styles.clinicContainer}
+        renderItem={renderProductItem}
+        contentContainerStyle={styles.productContainer}
       />
     </ScrollView>
   );
@@ -83,22 +110,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: width * 0.05,
     backgroundColor: "#fff",
+    marginTop: height * 0.06,
+  },
+  searchbar: {
+    marginTop: height * 0.04,
+    marginBottom: height * 0.02,
   },
   imageItem: {
     width: width * 0.8,
     marginRight: width * 0.02,
-    // height:height*0.3
   },
   image: {
     width: "100%",
     height: "100%",
-    // borderRadius:width*0.06/2,
-    // marginRight:width*0.02,
-    // marginBottom:width*0.02,
-    // marginTop:width*0.02,
-    // marginLeft:width*0.02,
-    // borderWidth:1,
-    // borderColor:'#000'
   },
   carouselContainer: {
     marginBottom: height * 0.02,
@@ -120,31 +144,35 @@ const styles = StyleSheet.create({
     marginTop: height * 0.02,
     color: "#000",
   },
-  clinicContainer:{
-    flexDirection:'row',
-    // flexWrap:'wrap',
-    justifyContent:'space-between'
+  productContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  clinicItem:{
-    alignItems: 'center',
-    justifyContent:'center',
-    padding:width*0.05,
-    marginHorizontal:width*0.02,
-    borderWidth:1,
-    borderColor:'#000',
-    borderRadius:width*0.05/2,
-    width:width*0.4,
-    height:width*0.4,
-    marginBottom:width*0.02,
+  productItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: width * 0.05,
+    marginHorizontal: width * 0.02,
+    borderRadius: (width * 0.05) / 2,
+    width: width * 0.4,
+    height: width * 0.6,
+    marginBottom: width * 0.02,
   },
-  imageClinic:{
-    width:width*0.25,
-    height:width*0.25,
-    borderRadius:width*0.125,
-    marginBottom:width*0.02,
-    marginTop:width*0.02,
-    marginLeft:width*0.02,
-    marginRight:width*0.02,
-    borderWidth:1,
-  }
+  imageProduct: {
+    width: width * 0.25,
+    height: width * 0.25,
+    borderRadius: width * 0.125,
+    marginBottom: width * 0.02,
+    marginTop: width * 0.02,
+    marginLeft: width * 0.02,
+    marginRight: width * 0.02,
+  },
+  card: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  itemText: {
+    textAlign: "center",
+    marginTop: 10,
+  },
 });

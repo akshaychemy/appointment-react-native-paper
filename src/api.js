@@ -51,3 +51,18 @@ export const bookAppointment = async (bookAppointmentData)=>{
         console.log(err)
     }
 }
+
+export const getProducts = async () => {
+    try {
+        const token = await AsyncStorage.getItem('token');
+        const response = await axios.get(`${API_BASE_URL}/products`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        return response.data;
+    } catch (err) {
+        console.log('Error fetching products:', err);
+        throw err;  // Optionally handle or rethrow the error
+    }
+};
